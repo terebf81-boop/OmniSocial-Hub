@@ -1,0 +1,298 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Core Primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isVerifiedOwner(userId) {
+      return isVerifiedUser() && isOwner(userId);
+    }
+
+    function isValidPlatform(platform) {
+      return platform in ['instagram', 'x', 'tiktok', 'linkedin', 'youtube', 'facebook', 'whatsapp', 'threads', 'email', 'web'];
+    }
+
+    function isValidSentiment(sentiment) {
+      return sentiment in ['positive', 'neutral', 'urgent', 'negative'];
+    }
+
+    function isValidInteractionStatus(status) {
+      return status in ['pending', 'replied', 'auto_replied'];
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll(['uid', 'email', 'displayName', 'language', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'email', 'displayName', 'language', 'createdAt', 'updatedAt'])
+        && data.uid is string && data.uid == userId && isValidId(data.uid)
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 254
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100
+        && data.language in ['es', 'en']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidConnectedAccount(data, userId, connectionId) {
+      return data.keys().hasAll(['id', 'ownerId', 'platform', 'profileUrl', 'username', 'displayLabel', 'channelCategory', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'ownerId', 'platform', 'profileUrl', 'username', 'displayLabel', 'channelCategory', 'status', 'createdAt', 'updatedAt'])
+        && data.id is string && data.id == connectionId && isValidId(data.id)
+        && data.ownerId is string && data.ownerId == userId
+        && isValidPlatform(data.platform)
+        && data.profileUrl is string && data.profileUrl.size() >= 5 && data.profileUrl.size() <= 500
+        && data.username is string && data.username.size() >= 1 && data.username.size() <= 100
+        && data.displayLabel is string && data.displayLabel.size() >= 1 && data.displayLabel.size() <= 120
+        && data.channelCategory in ['messages', 'comments', 'emails']
+        && data.status in ['active', 'paused']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidInteractionItem(data, userId, itemId) {
+      return data.keys().hasAll(['id', 'ownerId', 'connectionId', 'platform', 'senderName', 'senderHandle', 'senderAvatar', 'subjectOrContext', 'body', 'isRead', 'sentiment', 'sentimentScore', 'aiSuggestedReply', 'replyText', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'ownerId', 'connectionId', 'platform', 'senderName', 'senderHandle', 'senderAvatar', 'subjectOrContext', 'body', 'isRead', 'sentiment', 'sentimentScore', 'aiSuggestedReply', 'replyText', 'status', 'createdAt', 'updatedAt'])
+        && data.id is string && data.id == itemId && isValidId(data.id)
+        && data.ownerId is string && data.ownerId == userId
+        && data.connectionId is string && isValidId(data.connectionId)
+        && isValidPlatform(data.platform)
+        && data.senderName is string && data.senderName.size() >= 1 && data.senderName.size() <= 120
+        && data.senderHandle is string && data.senderHandle.size() >= 1 && data.senderHandle.size() <= 120
+        && data.senderAvatar is string && data.senderAvatar.size() <= 500
+        && data.subjectOrContext is string && data.subjectOrContext.size() <= 300
+        && data.body is string && data.body.size() >= 1 && data.body.size() <= 4000
+        && data.isRead is bool
+        && isValidSentiment(data.sentiment)
+        && data.sentimentScore is number && data.sentimentScore >= 0 && data.sentimentScore <= 100
+        && data.aiSuggestedReply is string && data.aiSuggestedReply.size() <= 2000
+        && data.replyText is string && data.replyText.size() <= 4000
+        && isValidInteractionStatus(data.status)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidTrashItem(data, userId, itemId) {
+      return data.keys().hasAll(['id', 'ownerId', 'originalCollection', 'connectionId', 'platform', 'senderName', 'senderHandle', 'senderAvatar', 'subjectOrContext', 'body', 'sentiment', 'sentimentScore', 'aiSuggestedReply', 'replyText', 'status', 'deletedAt', 'purgeAtMs'])
+        && data.keys().hasOnly(['id', 'ownerId', 'originalCollection', 'connectionId', 'platform', 'senderName', 'senderHandle', 'senderAvatar', 'subjectOrContext', 'body', 'sentiment', 'sentimentScore', 'aiSuggestedReply', 'replyText', 'status', 'deletedAt', 'purgeAtMs'])
+        && data.id is string && data.id == itemId && isValidId(data.id)
+        && data.ownerId is string && data.ownerId == userId
+        && data.originalCollection in ['messages', 'comments', 'emails']
+        && data.connectionId is string && isValidId(data.connectionId)
+        && isValidPlatform(data.platform)
+        && data.senderName is string && data.senderName.size() >= 1 && data.senderName.size() <= 120
+        && data.senderHandle is string && data.senderHandle.size() >= 1 && data.senderHandle.size() <= 120
+        && data.senderAvatar is string && data.senderAvatar.size() <= 500
+        && data.subjectOrContext is string && data.subjectOrContext.size() <= 300
+        && data.body is string && data.body.size() >= 1 && data.body.size() <= 4000
+        && isValidSentiment(data.sentiment)
+        && data.sentimentScore is number && data.sentimentScore >= 0 && data.sentimentScore <= 100
+        && data.aiSuggestedReply is string && data.aiSuggestedReply.size() <= 2000
+        && data.replyText is string && data.replyText.size() <= 4000
+        && isValidInteractionStatus(data.status)
+        && data.deletedAt is timestamp
+        && data.purgeAtMs is number && data.purgeAtMs > 0;
+    }
+
+    function isValidFaqRule(data, userId, ruleId) {
+      return data.keys().hasAll(['id', 'ownerId', 'title', 'keywords', 'replyTemplate', 'targetChannel', 'isActive', 'triggersCount', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'ownerId', 'title', 'keywords', 'replyTemplate', 'targetChannel', 'isActive', 'triggersCount', 'createdAt', 'updatedAt'])
+        && data.id is string && data.id == ruleId && isValidId(data.id)
+        && data.ownerId is string && data.ownerId == userId
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 120
+        && data.keywords is list && data.keywords.size() >= 1 && data.keywords.size() <= 10 && data.keywords[0] is string && data.keywords[0].size() <= 60
+        && data.replyTemplate is string && data.replyTemplate.size() >= 1 && data.replyTemplate.size() <= 2000
+        && data.targetChannel in ['all', 'messages', 'comments', 'emails']
+        && data.isActive is bool
+        && data.triggersCount is number && data.triggersCount >= 0
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function hasConnectionOrTrashRestore(userId, connectionId, itemId) {
+      return existsAfter(/databases/$(database)/documents/users/$(userId)/connections/$(connectionId))
+        || exists(/databases/$(database)/documents/users/$(userId)/trash/$(itemId));
+    }
+
+    // User Profiles (PII Isolated - no directory listing)
+    match /users/{userId} {
+      allow get: if isValidId(userId) && isVerifiedOwner(userId);
+      allow list: if false;
+      allow create: if isValidId(userId)
+        && isVerifiedOwner(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(userId)
+        && isVerifiedOwner(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().uid == existing().uid
+        && incoming().email == existing().email
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'language', 'updatedAt']);
+      allow delete: if false;
+
+      // Connected Social & Email Accounts
+      match /connections/{connectionId} {
+        allow get: if isValidId(userId) && isValidId(connectionId) && isVerifiedOwner(userId);
+        allow list: if isVerifiedOwner(userId) && resource.data.ownerId == request.auth.uid;
+        allow create: if isValidId(userId) && isValidId(connectionId)
+          && isVerifiedOwner(userId)
+          && isValidConnectedAccount(incoming(), userId, connectionId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+        allow update: if isValidId(userId) && isValidId(connectionId)
+          && isVerifiedOwner(userId)
+          && isValidConnectedAccount(incoming(), userId, connectionId)
+          && incoming().id == existing().id
+          && incoming().ownerId == existing().ownerId
+          && incoming().platform == existing().platform
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && (
+            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']) ||
+            incoming().diff(existing()).affectedKeys().hasOnly(['displayLabel', 'profileUrl', 'username', 'channelCategory', 'updatedAt'])
+          );
+        allow delete: if isValidId(userId) && isValidId(connectionId) && isVerifiedOwner(userId);
+      }
+
+      // Direct Messages
+      match /messages/{itemId} {
+        allow get: if isValidId(userId) && isValidId(itemId) && isVerifiedOwner(userId);
+        allow list: if isVerifiedOwner(userId) && resource.data.ownerId == request.auth.uid;
+        allow create: if isValidId(userId) && isValidId(itemId)
+          && isVerifiedOwner(userId)
+          && isValidInteractionItem(incoming(), userId, itemId)
+          && hasConnectionOrTrashRestore(userId, incoming().connectionId, itemId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+        allow update: if isValidId(userId) && isValidId(itemId)
+          && isVerifiedOwner(userId)
+          && isValidInteractionItem(incoming(), userId, itemId)
+          && incoming().id == existing().id
+          && incoming().ownerId == existing().ownerId
+          && incoming().connectionId == existing().connectionId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && (
+            incoming().diff(existing()).affectedKeys().hasOnly(['isRead', 'updatedAt']) ||
+            incoming().diff(existing()).affectedKeys().hasOnly(['replyText', 'status', 'isRead', 'updatedAt']) ||
+            incoming().diff(existing()).affectedKeys().hasOnly(['sentiment', 'sentimentScore', 'aiSuggestedReply', 'updatedAt'])
+          );
+        allow delete: if isValidId(userId) && isValidId(itemId) && isVerifiedOwner(userId);
+      }
+
+      // Social Comments
+      match /comments/{itemId} {
+        allow get: if isValidId(userId) && isValidId(itemId) && isVerifiedOwner(userId);
+        allow list: if isVerifiedOwner(userId) && resource.data.ownerId == request.auth.uid;
+        allow create: if isValidId(userId) && isValidId(itemId)
+          && isVerifiedOwner(userId)
+          && isValidInteractionItem(incoming(), userId, itemId)
+          && hasConnectionOrTrashRestore(userId, incoming().connectionId, itemId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+        allow update: if isValidId(userId) && isValidId(itemId)
+          && isVerifiedOwner(userId)
+          && isValidInteractionItem(incoming(), userId, itemId)
+          && incoming().id == existing().id
+          && incoming().ownerId == existing().ownerId
+          && incoming().connectionId == existing().connectionId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && (
+            incoming().diff(existing()).affectedKeys().hasOnly(['isRead', 'updatedAt']) ||
+            incoming().diff(existing()).affectedKeys().hasOnly(['replyText', 'status', 'isRead', 'updatedAt']) ||
+            incoming().diff(existing()).affectedKeys().hasOnly(['sentiment', 'sentimentScore', 'aiSuggestedReply', 'updatedAt'])
+          );
+        allow delete: if isValidId(userId) && isValidId(itemId) && isVerifiedOwner(userId);
+      }
+
+      // Emails
+      match /emails/{itemId} {
+        allow get: if isValidId(userId) && isValidId(itemId) && isVerifiedOwner(userId);
+        allow list: if isVerifiedOwner(userId) && resource.data.ownerId == request.auth.uid;
+        allow create: if isValidId(userId) && isValidId(itemId)
+          && isVerifiedOwner(userId)
+          && isValidInteractionItem(incoming(), userId, itemId)
+          && hasConnectionOrTrashRestore(userId, incoming().connectionId, itemId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+        allow update: if isValidId(userId) && isValidId(itemId)
+          && isVerifiedOwner(userId)
+          && isValidInteractionItem(incoming(), userId, itemId)
+          && incoming().id == existing().id
+          && incoming().ownerId == existing().ownerId
+          && incoming().connectionId == existing().connectionId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && (
+            incoming().diff(existing()).affectedKeys().hasOnly(['isRead', 'updatedAt']) ||
+            incoming().diff(existing()).affectedKeys().hasOnly(['replyText', 'status', 'isRead', 'updatedAt']) ||
+            incoming().diff(existing()).affectedKeys().hasOnly(['sentiment', 'sentimentScore', 'aiSuggestedReply', 'updatedAt'])
+          );
+        allow delete: if isValidId(userId) && isValidId(itemId) && isVerifiedOwner(userId);
+      }
+
+      // 90-Day Trash Bin
+      match /trash/{itemId} {
+        allow get: if isValidId(userId) && isValidId(itemId) && isVerifiedOwner(userId);
+        allow list: if isVerifiedOwner(userId) && resource.data.ownerId == request.auth.uid;
+        allow create: if isValidId(userId) && isValidId(itemId)
+          && isVerifiedOwner(userId)
+          && isValidTrashItem(incoming(), userId, itemId)
+          && incoming().deletedAt == request.time;
+        allow update: if false;
+        allow delete: if isValidId(userId) && isValidId(itemId) && isVerifiedOwner(userId);
+      }
+
+      // AI FAQ Automation Rules
+      match /faqRules/{ruleId} {
+        allow get: if isValidId(userId) && isValidId(ruleId) && isVerifiedOwner(userId);
+        allow list: if isVerifiedOwner(userId) && resource.data.ownerId == request.auth.uid;
+        allow create: if isValidId(userId) && isValidId(ruleId)
+          && isVerifiedOwner(userId)
+          && isValidFaqRule(incoming(), userId, ruleId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+        allow update: if isValidId(userId) && isValidId(ruleId)
+          && isVerifiedOwner(userId)
+          && isValidFaqRule(incoming(), userId, ruleId)
+          && incoming().id == existing().id
+          && incoming().ownerId == existing().ownerId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && (
+            incoming().diff(existing()).affectedKeys().hasOnly(['isActive', 'updatedAt']) ||
+            incoming().diff(existing()).affectedKeys().hasOnly(['triggersCount', 'updatedAt']) ||
+            incoming().diff(existing()).affectedKeys().hasOnly(['title', 'keywords', 'replyTemplate', 'targetChannel', 'isActive', 'updatedAt'])
+          );
+        allow delete: if isValidId(userId) && isValidId(ruleId) && isVerifiedOwner(userId);
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "OmniChat Hub",
+  "description": "Plataforma centralizada multiplataforma para gestionar mensajes directos, comentarios en redes sociales y correos electrónicos con IA integrada y sincronización en la nube.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

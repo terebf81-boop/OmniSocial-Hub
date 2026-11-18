@@ -1,0 +1,134 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User account preferences and identity profile.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "email": { "type": "string", "minLength": 3, "maxLength": 254 },
+        "displayName": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "language": { "type": "string", "enum": ["es", "en"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "displayName", "language", "createdAt", "updatedAt"]
+    },
+    "ConnectedAccount": {
+      "title": "ConnectedAccount",
+      "description": "Social network or email channel linked simply via Profile URL and Username.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "platform": { "type": "string", "enum": ["instagram", "x", "tiktok", "linkedin", "youtube", "facebook", "whatsapp", "threads", "email", "web"] },
+        "profileUrl": { "type": "string", "minLength": 5, "maxLength": 500 },
+        "username": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "displayLabel": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "channelCategory": { "type": "string", "enum": ["messages", "comments", "emails"] },
+        "status": { "type": "string", "enum": ["active", "paused"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "ownerId", "platform", "profileUrl", "username", "displayLabel", "channelCategory", "status", "createdAt", "updatedAt"]
+    },
+    "InteractionItem": {
+      "title": "InteractionItem",
+      "description": "Direct message, social comment, or email thread item.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "connectionId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "platform": { "type": "string", "enum": ["instagram", "x", "tiktok", "linkedin", "youtube", "facebook", "whatsapp", "threads", "email", "web"] },
+        "senderName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "senderHandle": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "senderAvatar": { "type": "string", "maxLength": 500 },
+        "subjectOrContext": { "type": "string", "maxLength": 300 },
+        "body": { "type": "string", "minLength": 1, "maxLength": 4000 },
+        "isRead": { "type": "boolean" },
+        "sentiment": { "type": "string", "enum": ["positive", "neutral", "urgent", "negative"] },
+        "sentimentScore": { "type": "number" },
+        "aiSuggestedReply": { "type": "string", "maxLength": 2000 },
+        "replyText": { "type": "string", "maxLength": 4000 },
+        "status": { "type": "string", "enum": ["pending", "replied", "auto_replied"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "ownerId", "connectionId", "platform", "senderName", "senderHandle", "senderAvatar", "subjectOrContext", "body", "isRead", "sentiment", "sentimentScore", "aiSuggestedReply", "replyText", "status", "createdAt", "updatedAt"]
+    },
+    "TrashItem": {
+      "title": "TrashItem",
+      "description": "Deleted interaction retained for 90 days before automatic permanent removal.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "originalCollection": { "type": "string", "enum": ["messages", "comments", "emails"] },
+        "connectionId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "platform": { "type": "string", "enum": ["instagram", "x", "tiktok", "linkedin", "youtube", "facebook", "whatsapp", "threads", "email", "web"] },
+        "senderName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "senderHandle": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "senderAvatar": { "type": "string", "maxLength": 500 },
+        "subjectOrContext": { "type": "string", "maxLength": 300 },
+        "body": { "type": "string", "minLength": 1, "maxLength": 4000 },
+        "sentiment": { "type": "string", "enum": ["positive", "neutral", "urgent", "negative"] },
+        "sentimentScore": { "type": "number" },
+        "aiSuggestedReply": { "type": "string", "maxLength": 2000 },
+        "replyText": { "type": "string", "maxLength": 4000 },
+        "status": { "type": "string", "enum": ["pending", "replied", "auto_replied"] },
+        "deletedAt": { "type": "string", "format": "date-time" },
+        "purgeAtMs": { "type": "number" }
+      },
+      "required": ["id", "ownerId", "originalCollection", "connectionId", "platform", "senderName", "senderHandle", "senderAvatar", "subjectOrContext", "body", "sentiment", "sentimentScore", "aiSuggestedReply", "replyText", "status", "deletedAt", "purgeAtMs"]
+    },
+    "FaqRule": {
+      "title": "FaqRule",
+      "description": "Automated AI FAQ response rule.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "keywords": { "type": "array" },
+        "replyTemplate": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "targetChannel": { "type": "string", "enum": ["all", "messages", "comments", "emails"] },
+        "isActive": { "type": "boolean" },
+        "triggersCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "ownerId", "title", "keywords", "replyTemplate", "targetChannel", "isActive", "triggersCount", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private user account profile and language preference."
+    },
+    "/users/{userId}/connections/{connectionId}": {
+      "schema": { "$ref": "#/entities/ConnectedAccount" },
+      "description": "Social profiles and email accounts connected via URL and username."
+    },
+    "/users/{userId}/messages/{itemId}": {
+      "schema": { "$ref": "#/entities/InteractionItem" },
+      "description": "Direct messages and private chat threads."
+    },
+    "/users/{userId}/comments/{itemId}": {
+      "schema": { "$ref": "#/entities/InteractionItem" },
+      "description": "Social media post comments."
+    },
+    "/users/{userId}/emails/{itemId}": {
+      "schema": { "$ref": "#/entities/InteractionItem" },
+      "description": "Email inbox messages."
+    },
+    "/users/{userId}/trash/{itemId}": {
+      "schema": { "$ref": "#/entities/TrashItem" },
+      "description": "Deleted items retained for 90 days before automatic permanent deletion."
+    },
+    "/users/{userId}/faqRules/{ruleId}": {
+      "schema": { "$ref": "#/entities/FaqRule" },
+      "description": "Automated FAQ rules for AI auto-replies."
+    }
+  }
+}
